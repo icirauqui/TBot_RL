@@ -1,3 +1,5 @@
+import os 
+
 import time
 import json
 import pandas as pd
@@ -6,6 +8,7 @@ import numpy as np
 from binance.client import Client
 from binance.enums import *
 from binance.exceptions import BinanceAPIException, BinanceOrderException
+from keys import *
 
 from rlAgent import rlAgent
 
@@ -104,54 +107,70 @@ if __name__ == '__main__':
     ema2 = 7
     ema3 = 14
 
-    if (nMode==1):
+    while (nMode != 9):
 
+        clear = lambda: os.system('clear')
+        clear()
+
+        print(" TBot RL")
+        print("  1. Download data")
+        print("  2. Train")
+        print("  3. Test")
+        print("         ")
+        print(" .9. Exit")
+        print("         ")
+        nMode = input("Enter mode: ")
+
+
+
+
+
+        if (nMode==1):
+            
+            ndays = 365
+            since = str(int(time.time()-(ndays*24*3600))*1000)
         
-        ndays = 365
-        since = str(int(time.time()-(ndays*24*3600))*1000)
-    
-        api_key = "LhysoTLpGausJ8HkZ5gwHRzvxTh7IPPezexB5QM9xjxu1Z0K5DUZvVqkgKnDNkw8"
-        api_secret = "mEAN4L9DS3HjSumkQlMIxZBXQnfEkIFBPxz5u2OOy84F8WgVU4jJ4u1D4AEY6Z9A"
-        k = Client(api_key,api_secret)
 
-        pair = get_pairs()
-        balance = api_get_balance()
+            k = Client(api_key,api_secret)
 
-        crypto_data = api_get_ticker_ohlc(pair,since,inttime)
-        df = pd.DataFrame(crypto_data)
-        df.columns = ['Open time','Open','High','Low','Close','Volume','Close time','Quote asset volume','Number of trades','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
-        df.drop(['Open time','Close time','Quote asset volume','Number of trades','Taker buy base asset volume','Taker buy quote asset volume','Ignore'],axis=1,inplace=True)
+            pair = get_pairs()
+            balance = api_get_balance()
 
-        # Trading indicators
-        # EMA
-        get_asset_params(pair)
-        df['EMA1'] = df['Close'].ewm(span=ema1,adjust=False).mean()
-        df['EMA2'] = df['Close'].ewm(span=ema2,adjust=False).mean()
-        df['EMA3'] = df['Close'].ewm(span=ema3,adjust=False).mean()
+            crypto_data = api_get_ticker_ohlc(pair,since,inttime)
+            df = pd.DataFrame(crypto_data)
+            df.columns = ['Open time','Open','High','Low','Close','Volume','Close time','Quote asset volume','Number of trades','Taker buy base asset volume','Taker buy quote asset volume','Ignore']
+            df.drop(['Open time','Close time','Quote asset volume','Number of trades','Taker buy base asset volume','Taker buy quote asset volume','Ignore'],axis=1,inplace=True)
 
-        # Store the open and close values in a pandas dataframe
-        real_df = pd.DataFrame()
-        real_df['Real open'] = df['Open'].astype(float)
-        real_df['Real close'] = df['Close'].astype(float)
+            # Trading indicators
+            # EMA
+            get_asset_params(pair)
+            df['EMA1'] = df['Close'].ewm(span=ema1,adjust=False).mean()
+            df['EMA2'] = df['Close'].ewm(span=ema2,adjust=False).mean()
+            df['EMA3'] = df['Close'].ewm(span=ema3,adjust=False).mean()
 
-        # Normalize the data
-        normalizer = MinMaxScaler().fit(df)
-        df = normalizer.transform(df)
-        df = pd.DataFrame(df,columns=['Open','High','Low','Close','Volume','EMA1','EMA2','EMA3'])
+            # Store the open and close values in a pandas dataframe
+            real_df = pd.DataFrame()
+            real_df['Real open'] = df['Open'].astype(float)
+            real_df['Real close'] = df['Close'].astype(float)
 
-        # Concatenate normaliced and original Data
-        df = pd.concat([df,real_df],axis=1)
-        df = df[:-1]
+            # Normalize the data
+            normalizer = MinMaxScaler().fit(df)
+            df = normalizer.transform(df)
+            df = pd.DataFrame(df,columns=['Open','High','Low','Close','Volume','EMA1','EMA2','EMA3'])
 
-        df.to_pickle('df.pkl')
-        print(df)
-        print("Data saved!")
+            # Concatenate normaliced and original Data
+            df = pd.concat([df,real_df],axis=1)
+            df = df[:-1]
+
+            df.to_pickle('df.pkl')
+            print(df)
+            print("Data saved!")
 
 
-    elif (nMode==2):
-        df = pd.read_pickle('df.pkl')
+        elif (nMode==2):
+            df = pd.read_pickle('df.pkl')
 
-        agent = rlAgent(df,3,500,0.95,0.997,0.01,0.005)
-        agent.train(10000,100,10)
+            agent = rlAgent(df,3,500,0.95,0.997,0.01,0.005)
+            agent.train(10000,100,10)
 
 
